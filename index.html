@@ -1,0 +1,1153 @@
+<title>朱入れ採点</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: 答案用紙のような淡い罫線の地に、3つの作業段（設定→採点→確認）を左から右へ。朱色は採点記号だけに使う */
+:root{
+  --paper:#F5F7F4; --sheet:#FFFFFF; --ink:#1E2A31; --muted:#5B6A71; --line:#D3DBD7; --rule:#E7ECE9;
+  --shu:#C4382B; --shu-soft:#F7E3DF; --act:#24435C; --act-fg:#FFFFFF;
+  --ok:#2C7A4B; --ok-soft:#E1F1E6; --warn:#A8701A; --warn-soft:#F8EDD8; --bad:#B23A31;
+  --f-display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#13181B; --sheet:#1B2226; --ink:#E4EAEC; --muted:#98A6AC; --line:#2E383D; --rule:#232B2F;
+  --shu:#EA6B5C; --shu-soft:#3A2220; --act:#9FC2DE; --act-fg:#10202C;
+  --ok:#6CC28F; --ok-soft:#1D3227; --warn:#E0AE5C; --warn-soft:#352A17; --bad:#EA6B5C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#13181B; --sheet:#1B2226; --ink:#E4EAEC; --muted:#98A6AC; --line:#2E383D; --rule:#232B2F;
+  --shu:#EA6B5C; --shu-soft:#3A2220; --act:#9FC2DE; --act-fg:#10202C;
+  --ok:#6CC28F; --ok-soft:#1D3227; --warn:#E0AE5C; --warn-soft:#352A17; --bad:#EA6B5C; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:20px 60px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+h1{font-family:var(--f-display);font-weight:800;font-size:2rem;margin:0;letter-spacing:.04em;line-height:1.2}
+h1 .mark{color:var(--shu)}
+.sub{color:var(--muted);font-size:.86rem;margin:2px 0 0}
+.status{font-size:.8rem;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:1px 10px;background:var(--sheet);white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.dot.on{background:var(--ok)} .dot.off{background:var(--bad)}
+nav.steps{display:flex;gap:0;margin:18px 0 22px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--sheet)}
+nav.steps button{flex:1;min-width:0;border:0;background:transparent;color:var(--muted);font:inherit;padding:10px 12px;cursor:pointer;text-align:left;border-right:1px solid var(--line);display:flex;gap:10px;align-items:baseline}
+nav.steps button:last-child{border-right:0}
+nav.steps button .n{font-family:var(--f-mono);font-size:.78rem}
+nav.steps button b{font-weight:700;color:inherit}
+nav.steps button[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+nav.steps button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--act);outline-offset:2px}
+section.panel{display:flex;flex-direction:column;gap:18px}
+.card{background:var(--sheet);border:1px solid var(--line);border-radius:8px;padding:18px 20px}
+.card h2{font-family:var(--f-display);font-size:1.2rem;margin:0 0 4px;text-wrap:balance}
+.card .lead{color:var(--muted);font-size:.88rem;margin:0 0 12px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.row>*{min-width:0}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--muted);letter-spacing:.02em}
+input[type=text],input[type=number],select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:7px 10px;width:100%}
+textarea{resize:vertical;min-height:72px;line-height:1.55}
+input[type=number]{font-family:var(--f-mono)}
+.btn{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--sheet);color:var(--ink);border-radius:6px;padding:7px 14px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--act);border-color:var(--act);color:var(--act-fg)}
+.btn.shu{background:var(--shu);border-color:var(--shu);color:#fff}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:3px 10px;font-size:.82rem}
+.drop{border:1.5px dashed var(--line);border-radius:8px;padding:16px;text-align:center;color:var(--muted);font-size:.88rem;background:var(--paper);cursor:pointer}
+.drop.over{border-color:var(--act);color:var(--ink)}
+.drop strong{color:var(--ink)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.note{font-size:.82rem;color:var(--muted)}
+.notice{border-left:3px solid var(--warn);background:var(--warn-soft);padding:8px 12px;border-radius:0 6px 6px 0;font-size:.86rem}
+.notice.err{border-color:var(--bad);background:var(--shu-soft)}
+.qlist{display:flex;flex-direction:column;gap:12px}
+.q{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--sheet);display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px}
+.q .qhead{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.q .qno{font-family:var(--f-display);font-size:1.15rem;font-weight:800;min-width:3.5em}
+.q .c6{grid-column:span 6}.q .c12{grid-column:1/-1}
+@media (max-width:720px){.q .c6{grid-column:1/-1}}
+.typechip{font-size:.72rem;border:1px solid var(--line);border-radius:4px;padding:0 6px;color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.students{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.st{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) auto auto;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--rule);background:var(--sheet)}
+.st:last-child{border-bottom:0}
+@media (max-width:640px){.st{grid-template-columns:minmax(0,1fr) auto}.st .fn{grid-column:1/-1;order:3}}
+.st .fn{font-size:.78rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.state{font-size:.76rem;border-radius:4px;padding:1px 8px;white-space:nowrap}
+.state.ready{background:var(--rule);color:var(--muted)}
+.state.grading{background:var(--warn-soft);color:var(--warn)}
+.state.done{background:var(--ok-soft);color:var(--ok)}
+.state.error{background:var(--shu-soft);color:var(--bad)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--sheet)}
+table.mx{border-collapse:collapse;width:100%;font-size:.86rem}
+table.mx th,table.mx td{border-bottom:1px solid var(--rule);padding:6px 10px;text-align:center;white-space:nowrap}
+table.mx th{font-weight:500;color:var(--muted);font-size:.78rem;background:var(--paper);position:sticky;top:0}
+table.mx td.name{text-align:left;font-weight:500}
+table.mx tr{cursor:pointer}
+table.mx tr.sel td{background:var(--shu-soft)}
+table.mx td.low{box-shadow:inset 0 -3px 0 var(--warn)}
+table.mx td.tot{font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.78rem;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:3px;background:var(--warn);vertical-align:middle;margin-right:4px}
+.detail{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.detail{grid-template-columns:minmax(0,1fr)}}
+.pages{display:flex;flex-direction:column;gap:12px}
+.pagebox{position:relative;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:#fff;cursor:crosshair}
+.pagehint{font-size:.78rem;color:var(--muted)}
+.ans{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--sheet);display:flex;flex-direction:column;gap:6px;cursor:pointer}
+.ans.sel{border-color:var(--shu);box-shadow:0 0 0 1px var(--shu)}
+.ans .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ans .qn{font-family:var(--f-display);font-weight:800}
+.verdict{font-family:var(--f-display);font-weight:800;font-size:1.2rem;color:var(--shu);width:1.4em;text-align:center}
+.ans .reading{font-size:.88rem;background:var(--paper);border-radius:4px;padding:4px 8px;white-space:pre-wrap;overflow-wrap:anywhere}
+.ans .reason{font-size:.84rem;color:var(--muted);overflow-wrap:anywhere}
+.ans .len{font-size:.8rem;color:var(--shu)}
+.ans input.score{width:4.5em;padding:3px 6px}
+.flag{font-size:.72rem;color:var(--warn);border:1px solid var(--warn);border-radius:4px;padding:0 6px}
+.sumbox{display:flex;flex-wrap:wrap;gap:18px;align-items:baseline}
+.big{font-family:var(--f-mono);font-size:1.8rem;font-weight:600}
+.empty{padding:28px;text-align:center;color:var(--muted);font-size:.9rem}
+.bar{height:6px;background:var(--rule);border-radius:3px;overflow:hidden}
+.bar>span{display:block;height:100%;background:var(--act);transition:width .3s}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:6px;font-size:.88rem;max-width:90vw;z-index:10}
+.sample-tag{font-size:.72rem;background:var(--warn-soft);color:var(--warn);border-radius:4px;padding:1px 8px}
+details summary{cursor:pointer;color:var(--muted);font-size:.86rem}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>朱入れ<span class="mark">採点</span></h1>
+      <p class="sub">問題と模範解答を登録 → 手書き答案PDFを読み込む → AIが下採点 → 先生が確認して確定</p>
+    </div>
+    <div class="status" id="status">
+      <span class="pill"><span class="dot" id="dotAI"></span><span id="txtAI">AI採点：確認中</span></span>
+      <span class="pill"><span class="dot" id="dotDB"></span><span id="txtDB">保存：確認中</span></span>
+    </div>
+  </header>
+
+  <nav class="steps" role="tablist">
+    <button role="tab" id="tab-setup" aria-selected="true" data-tab="setup"><span class="n">1</span><b>試験の設定</b></button>
+    <button role="tab" id="tab-grade" aria-selected="false" data-tab="grade"><span class="n">2</span><b>答案の採点</b></button>
+    <button role="tab" id="tab-review" aria-selected="false" data-tab="review"><span class="n">3</span><b>確認と出力</b></button>
+  </nav>
+
+  <!-- ===== 1. 設定 ===== -->
+  <section class="panel" id="p-setup">
+    <div class="card">
+      <div class="row">
+        <label class="f" style="flex:2 1 220px">試験
+          <select id="examSel"></select>
+        </label>
+        <button class="btn" id="btnNewExam">新しい試験</button>
+        <button class="btn primary" id="btnSaveExam">設定を保存</button>
+        <button class="btn ghost" id="btnDelExam">この試験を削除</button>
+      </div>
+      <div id="delConfirm" class="notice err" hidden style="margin-top:12px">
+        この試験の設定と採点結果をすべて削除します。元に戻せません。
+        <button class="btn sm shu" id="btnDelYes">削除する</button>
+        <button class="btn sm" id="btnDelNo">やめる</button>
+      </div>
+      <div class="grid2" style="margin-top:14px">
+        <label class="f">試験名<input type="text" id="examName"></label>
+        <label class="f">科目・範囲（任意）<input type="text" id="examSubject"></label>
+      </div>
+      <p id="sampleNote" class="note" hidden style="margin:10px 0 0"><span class="sample-tag">サンプル</span> これは使い方を示す例の試験です。PDFから自動作成するか、書き換えて保存してください。</p>
+    </div>
+
+    <div class="card">
+      <h2>問題と模範解答から採点基準を作る</h2>
+      <p class="lead">問題と模範解答の小冊子PDF（画像も可）を入れると、AIが全ページを読み取り、設問・配点・採点項目を下書きします。ページ数に制限はありません。見開きのページは左右に分けて読みます。下の一覧で確認・修正してから保存してください。</p>
+      <div class="grid2">
+        <div>
+          <div class="drop" id="dropQ" tabindex="0"><strong>問題</strong>のPDF・画像<br><span id="nameQ">クリックまたはドロップ</span></div>
+          <input type="file" id="fileQ" accept="application/pdf,image/*" multiple hidden>
+        </div>
+        <div>
+          <div class="drop" id="dropA" tabindex="0"><strong>模範解答</strong>のPDF・画像<br><span id="nameA">クリックまたはドロップ</span></div>
+          <input type="file" id="fileA" accept="application/pdf,image/*" multiple hidden>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" id="btnExtract">採点基準を自動作成</button>
+        <button class="btn ghost" id="btnExtractStop" hidden>中止</button>
+        <span class="note" id="extractMsg"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>採点方針</h2>
+      <p class="lead">すべての設問に共通するルールです。AIはこの方針に従って採点します。</p>
+      <textarea id="policy" rows="5"></textarea>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:baseline">
+        <div><h2>設問と採点基準</h2><p class="lead" style="margin:0">採点項目は1行に「点数 | 内容」の形で書きます。合計が配点になるようにしてください。</p></div>
+        <div class="note">合計 <span class="mono" id="totalPts">0</span> 点</div>
+      </div>
+      <div class="qlist" id="qlist" style="margin-top:14px"></div>
+      <div class="row" style="margin-top:12px"><button class="btn" id="btnAddQ">設問を追加</button></div>
+    </div>
+  </section>
+
+  <!-- ===== 2. 採点 ===== -->
+  <section class="panel" id="p-grade" hidden>
+    <div class="card">
+      <h2>答案を読み込む</h2>
+      <p class="lead">試験：<b id="gExamName"></b>（<span id="gExamInfo"></span>）</p>
+      <div class="row">
+        <label class="f" style="flex:1 1 240px">答案ファイルの形
+          <select id="splitMode">
+            <option value="files">1人1ファイル（ファイル名を生徒名にする）</option>
+            <option value="combined">全員分が1つのPDF（一定ページごとに区切る）</option>
+          </select>
+        </label>
+        <label class="f" id="ppsWrap" hidden style="flex:0 1 160px">1人あたりのページ数<input type="number" id="pps" min="1" value="2"></label>
+      </div>
+      <div class="drop" id="dropS" tabindex="0" style="margin-top:12px"><strong>答案</strong>のスキャンPDF・画像（複数可）<br><span>クリックまたはドロップ</span></div>
+      <input type="file" id="fileS" accept="application/pdf,image/*" multiple hidden>
+      <p class="note" style="margin:8px 0 0">答案画像はこの画面の中だけで扱い、保存はしません。保存されるのは採点結果だけです。後で赤入れPDFを作るときは、同じファイルをもう一度読み込んでください。</p>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">生徒一覧</h2>
+        <div class="row">
+          <label class="f">精度
+            <select id="tier">
+              <option value="default">標準（速い）</option>
+              <option value="complex">高精度（時間がかかる）</option>
+            </select>
+          </label>
+          <label class="f">読み取り
+            <select id="tile">
+              <option value="1">高精細（ページを細かく分けて読む）</option>
+              <option value="0">通常（速い）</option>
+            </select>
+          </label>
+          <label class="f" style="flex-direction:row;align-items:center;gap:6px;color:var(--ink)"><input type="checkbox" id="readName" checked> 答案の氏名欄を読む</label>
+        </div>
+      </div>
+      <div style="margin-top:12px" id="studentsBox"></div>
+      <div style="margin-top:12px" class="row">
+        <button class="btn shu" id="btnGrade">未採点の答案を採点する</button>
+        <button class="btn" id="btnStop" hidden>中止</button>
+        <button class="btn ghost" id="btnClearS">一覧を空にする</button>
+        <div style="flex:1 1 200px"><div class="bar"><span id="progBar" style="width:0%"></span></div><div class="note" id="progTxt"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 3. 確認 ===== -->
+  <section class="panel" id="p-review" hidden>
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div><h2 style="margin:0">採点一覧</h2><p class="lead" style="margin:0">行を選ぶと下に答案と採点の詳細が出ます。点数はそこで直せます。</p></div>
+        <div class="row">
+          <button class="btn" id="btnCSV">採点一覧（CSV）</button>
+          <button class="btn primary" id="btnZip">全員の赤入れPDF（ZIP）</button>
+        </div>
+      </div>
+      <div class="legend" style="margin:10px 0"><span><i></i>AIの確信度が低い（要確認）</span><span>✓ 確認済み</span><span id="avgTxt"></span></div>
+      <div class="tablewrap" id="mxBox"></div>
+      <p class="note" id="exportMsg" style="margin:8px 0 0"></p>
+    </div>
+    <div class="card" id="detailCard">
+      <div id="detailBox"></div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+"use strict";
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid8 = () => Math.random().toString(36).slice(2, 10);
+const TYPES = {choice:"選択・穴埋め", numeric:"数値", calc:"計算過程つき", written:"記述・説明", formula:"化学式・反応式"};
+const DEFAULT_POLICY = [
+  "全体的にやや甘めに採点する。",
+  "漢字の誤りは大目に見る。全く別のことを書いていなければ正答とする（例：電気陰性度が「強い」も可）。",
+  "甘めに判断して得点を与えた場合は、その旨と「本番では不正解になる」ことを必ず記す。",
+  "有効数字・単位・化学式の係数などの扱いは、各設問の採点項目に従う。"
+].join("\n");
+
+const SAMPLE_EXAM = () => ({
+  id: "sample", sample: true, name: "化学基礎 後期中間考査（サンプル）", subject: "物質量",
+  policy: DEFAULT_POLICY,
+  questions: [
+    {id:uid8(), no:"1", type:"numeric", max:2, prompt:"水 9.0 g の物質量は何 mol か。H=1.0, O=16", model:"0.50 mol",
+     points:[{pts:2,text:"0.50 mol（有効数字2桁。0.5 mol は1点）"}], notes:""},
+    {id:uid8(), no:"2", type:"calc", max:3, prompt:"標準状態で 5.6 L の二酸化炭素の質量は何 g か。途中式も書け。C=12, O=16", model:"5.6 / 22.4 = 0.25 mol、0.25 × 44 = 11 g",
+     points:[{pts:1,text:"物質量 0.25 mol を求めている"},{pts:1,text:"モル質量 44 g/mol を用いている"},{pts:1,text:"答え 11 g（単位を含む）"}], notes:"途中式がなく答えだけ正しい場合は1点"},
+    {id:uid8(), no:"3", type:"formula", max:2, prompt:"メタンが完全燃焼するときの化学反応式を書け。", model:"CH4 + 2O2 → CO2 + 2H2O",
+     points:[{pts:1,text:"反応物・生成物の化学式が正しい"},{pts:1,text:"係数が正しい"}], notes:""},
+    {id:uid8(), no:"4", type:"written", max:3, prompt:"物質量 1 mol とはどのような量か、説明せよ。", model:"6.0×10²³ 個の粒子の集団を 1 mol とし、物質量の単位として用いる。",
+     points:[{pts:1,text:"6.0×10²³（アボガドロ数）に触れている"},{pts:1,text:"粒子の集団・個数であることを述べている"},{pts:1,text:"物質量の単位であることを述べている"}], notes:""}
+  ]
+});
+
+const S = {
+  sample:null, db:null, downloads:null, uid:null, limits:null,
+  exams:[], exam:SAMPLE_EXAM(), students:[], selStudent:null, selQ:null,
+  filesQ:[], filesA:[], gradeCtl:null, extractCtl:null, saveTimers:{}
+};
+
+/* ---------- 共通UI ---------- */
+let toastT;
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true, 3200); }
+function setTab(name){
+  for (const b of document.querySelectorAll("nav.steps button")) b.setAttribute("aria-selected", String(b.dataset.tab===name));
+  for (const p of ["setup","grade","review"]) $("p-"+p).hidden = p!==name;
+  if (name==="grade") renderGrade();
+  if (name==="review") renderReview();
+}
+document.querySelectorAll("nav.steps button").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+
+function sampleErr(e){
+  const c = e && e.code;
+  return ({not_granted:"AIの利用が許可されていません。許可するとAI採点が使えます。",
+    rate_limited:"利用が混み合っているか、利用上限に達しました。少し待ってから再度お試しください。",
+    image_rejected:"画像を受け付けられませんでした。ページ数を減らすか、別の形式で読み込んでください。",
+    images_unavailable:"この画面では画像をAIに送れません。",
+    invalid_json:"AIの返答を読み取れませんでした。もう一度お試しください。",
+    prompt_too_large:"送る内容が多すぎます。設問数やページ数を減らしてください。",
+    refused:"AIがこの内容の処理を断りました。",
+    cancelled:"中止しました。", session_expired:"サインインし直してください。"}[c]) || ("AIとの通信に失敗しました（"+(c||"不明")+"）。もう一度お試しください。");
+}
+
+/* ---------- ファイル → ページ画像 ---------- */
+async function fileToPages(file, maxW=1700){
+  const out=[];
+  if (file.type==="application/pdf" || /\.pdf$/i.test(file.name)){
+    if (!window.pdfjsLib) throw new Error("PDF読み込みライブラリを読み込めませんでした");
+    const pdf = await pdfjsLib.getDocument({data: new Uint8Array(await file.arrayBuffer())}).promise;
+    for (let i=1;i<=pdf.numPages;i++){
+      const pg = await pdf.getPage(i);
+      const v1 = pg.getViewport({scale:1});
+      const scale = Math.min(3, maxW / v1.width);
+      const vp = pg.getViewport({scale});
+      const cv = document.createElement("canvas"); cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
+      const ctx = cv.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,cv.width,cv.height);
+      await pg.render({canvasContext:ctx, viewport:vp}).promise;
+      out.push(await canvasToPage(cv));
+    }
+  } else {
+    const bmp = await createImageBitmap(file);
+    const s = Math.min(1, maxW / bmp.width);
+    const cv = document.createElement("canvas"); cv.width=Math.round(bmp.width*s); cv.height=Math.round(bmp.height*s);
+    const ctx=cv.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,cv.width,cv.height); ctx.drawImage(bmp,0,0,cv.width,cv.height);
+    out.push(await canvasToPage(cv));
+  }
+  return out;
+}
+function canvasToPage(cv){
+  return new Promise(res => cv.toBlob(b => res({blob:b, url:URL.createObjectURL(b), w:cv.width, h:cv.height}), "image/jpeg", 0.88));
+}
+async function cropRegion(page, x0, y0, x1, y1){
+  if (x0===0&&y0===0&&x1===1&&y1===1) return page.blob;
+  const bmp = await createImageBitmap(page.blob);
+  const sx=Math.round(x0*bmp.width), sw=Math.round((x1-x0)*bmp.width);
+  const sy=Math.round(y0*bmp.height), sh=Math.round((y1-y0)*bmp.height);
+  const cv=document.createElement("canvas"); cv.width=sw; cv.height=sh;
+  cv.getContext("2d").drawImage(bmp,sx,sy,sw,sh,0,0,sw,sh);
+  return new Promise(r=>cv.toBlob(r,"image/jpeg",0.9));
+}
+/* 1ページを読み取り用の区画に分ける。横長（見開き・A3解答用紙）は左右に、縦長は高精細なら上下に。 */
+function regionsFor(page, hi){
+  if (page.w > page.h*1.15){
+    const L={x0:0,x1:0.53,y0:0,y1:1,where:"左半分"}, R={x0:0.47,x1:1,y0:0,y1:1,where:"右半分"};
+    if (!hi) return [L,R];
+    return [{...L,y1:0.55,where:"左上"},{...L,y0:0.45,where:"左下"},{...R,y1:0.55,where:"右上"},{...R,y0:0.45,where:"右下"}];
+  }
+  if (!hi) return [{x0:0,x1:1,y0:0,y1:1,where:"全体"}];
+  return [{x0:0,x1:1,y0:0,y1:0.55,where:"上半分"},{x0:0,x1:1,y0:0.45,y1:1,where:"下半分"}];
+}
+function chunk(arr,n){ const out=[]; for(let i=0;i<arr.length;i+=n) out.push(arr.slice(i,i+n)); return out; }
+async function runPool(tasks, n, signal){
+  const results=new Array(tasks.length); let next=0;
+  async function w(){ while(next<tasks.length){ if(signal?.aborted) throw {code:"cancelled"}; const i=next++; results[i]=await tasks[i](); } }
+  await Promise.all(Array.from({length:Math.min(n,tasks.length)},w));
+  return results;
+}
+function wireDrop(dropId, inputId, onFiles){
+  const d=$(dropId), inp=$(inputId);
+  d.onclick=()=>inp.click();
+  d.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); inp.click(); } };
+  inp.onchange=()=>{ onFiles([...inp.files]); inp.value=""; };
+  d.ondragover=e=>{ e.preventDefault(); d.classList.add("over"); };
+  d.ondragleave=()=>d.classList.remove("over");
+  d.ondrop=e=>{ e.preventDefault(); d.classList.remove("over"); onFiles([...e.dataTransfer.files]); };
+}
+
+/* ---------- 1. 試験の設定 ---------- */
+function readExamForm(){
+  const ex=S.exam;
+  ex.name=$("examName").value.trim()||"無題の試験";
+  ex.subject=$("examSubject").value.trim();
+  ex.policy=$("policy").value;
+}
+function renderExamSel(){
+  const sel=$("examSel"); const list=[...S.exams];
+  if (!list.find(e=>e.id===S.exam.id)) list.unshift(S.exam);
+  sel.innerHTML = list.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}${e.id===S.exam.id&&!S.exams.find(x=>x.id===e.id)?"（未保存）":""}</option>`).join("");
+  sel.value=S.exam.id;
+}
+function renderSetup(){
+  renderExamSel();
+  $("examName").value=S.exam.name||""; $("examSubject").value=S.exam.subject||"";
+  $("policy").value=S.exam.policy??DEFAULT_POLICY;
+  $("sampleNote").hidden=!S.exam.sample;
+  renderQuestions();
+}
+function renderQuestions(){
+  const box=$("qlist");
+  if (!S.exam.questions.length){ box.innerHTML=`<div class="empty">設問がありません。PDFから自動作成するか、「設問を追加」で入力してください。</div>`; updateTotal(); return; }
+  box.innerHTML = S.exam.questions.map((q,i)=>`
+    <div class="q" data-i="${i}">
+      <div class="qhead">
+        <label class="f" style="width:6.5em">設問番号<input type="text" data-k="no" value="${esc(q.no)}"></label>
+        <label class="f" style="flex:1 1 160px">形式<select data-k="type">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}" ${q.type===k?"selected":""}>${v}</option>`).join("")}</select></label>
+        <label class="f" style="width:6em">配点<input type="number" min="0" step="0.5" data-k="max" value="${esc(q.max)}"></label>
+        <span style="flex:1"></span>
+        <button class="btn sm ghost" data-act="up" ${i===0?"disabled":""} aria-label="上へ">↑</button>
+        <button class="btn sm ghost" data-act="down" ${i===S.exam.questions.length-1?"disabled":""} aria-label="下へ">↓</button>
+        <button class="btn sm ghost" data-act="del">削除</button>
+      </div>
+      <label class="f c6">問題文（要約でよい）<textarea data-k="prompt" rows="2">${esc(q.prompt)}</textarea></label>
+      <label class="f c6">模範解答<textarea data-k="model" rows="2">${esc(q.model)}</textarea></label>
+      <label class="f c6">採点項目（点数 | 内容）<textarea data-k="points" rows="3">${esc((q.points||[]).map(p=>`${p.pts} | ${p.text}`).join("\n"))}</textarea></label>
+      <label class="f c6">許容・注意（任意）<textarea data-k="notes" rows="3" placeholder="例：0.5 mol も可、単位なしは−1">${esc(q.notes)}</textarea></label>
+      <div class="c12 note" data-warn></div>
+    </div>`).join("");
+  box.querySelectorAll(".q").forEach(el=>checkPoints(el, S.exam.questions[+el.dataset.i]));
+  updateTotal();
+}
+function parsePoints(txt){
+  return txt.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{
+    const m=l.match(/^(\d+(?:\.\d+)?)\s*[|｜:：]\s*(.+)$/);
+    return m?{pts:+m[1],text:m[2].trim()}:{pts:0,text:l};
+  });
+}
+function checkPoints(el,q){
+  const sum=(q.points||[]).reduce((a,p)=>a+(+p.pts||0),0);
+  const w=el.querySelector("[data-warn]");
+  w.textContent = (q.points||[]).length && Math.abs(sum-(+q.max||0))>1e-6 ? `採点項目の合計（${sum}点）が配点（${q.max}点）と合っていません。` : "";
+  w.style.color="var(--warn)";
+}
+function updateTotal(){ $("totalPts").textContent = S.exam.questions.reduce((a,q)=>a+(+q.max||0),0); }
+$("qlist").addEventListener("input", e=>{
+  const qel=e.target.closest(".q"); if(!qel) return; const q=S.exam.questions[+qel.dataset.i]; const k=e.target.dataset.k; if(!k) return;
+  if (k==="points") q.points=parsePoints(e.target.value);
+  else if (k==="max") q.max=+e.target.value||0;
+  else q[k]=e.target.value;
+  checkPoints(qel,q); updateTotal();
+});
+$("qlist").addEventListener("change", e=>{ if(e.target.dataset.k==="type"){ const qel=e.target.closest(".q"); S.exam.questions[+qel.dataset.i].type=e.target.value; }});
+$("qlist").addEventListener("click", e=>{
+  const b=e.target.closest("button[data-act]"); if(!b) return; const i=+b.closest(".q").dataset.i; const qs=S.exam.questions;
+  if (b.dataset.act==="del") qs.splice(i,1);
+  if (b.dataset.act==="up") [qs[i-1],qs[i]]=[qs[i],qs[i-1]];
+  if (b.dataset.act==="down") [qs[i+1],qs[i]]=[qs[i],qs[i+1]];
+  renderQuestions();
+});
+$("btnAddQ").onclick=()=>{ S.exam.questions.push({id:uid8(),no:String(S.exam.questions.length+1),type:"written",max:2,prompt:"",model:"",points:[],notes:""}); renderQuestions(); };
+$("btnNewExam").onclick=()=>{ readExamForm(); S.exam={id:"ex-"+uid8(), name:"新しい試験", subject:"", policy:DEFAULT_POLICY, questions:[]}; S.students=[]; renderSetup(); };
+$("examSel").onchange=async()=>{
+  const ex=S.exams.find(e=>e.id===$("examSel").value); if(!ex) return;
+  S.exam=structuredClone(ex); S.students=[]; S.selStudent=null; renderSetup(); await loadResults();
+};
+$("btnSaveExam").onclick=saveExam;
+async function saveExam(){
+  readExamForm();
+  if (S.exam.sample){ S.exam.sample=false; S.exam.id="ex-"+uid8(); }
+  if (!S.db||!S.uid){ toast("保存できない状態です（この画面を閉じると消えます）"); renderSetup(); return; }
+  const body={kind:"exam", ...S.exam, updatedAt:new Date().toISOString()};
+  try{
+    await S.db.collection("data/users/"+S.uid).doc(S.exam.id).set(JSON.parse(JSON.stringify(body)));
+    const i=S.exams.findIndex(e=>e.id===S.exam.id); if(i>=0) S.exams[i]=structuredClone(S.exam); else S.exams.unshift(structuredClone(S.exam));
+    renderSetup(); toast("設定を保存しました");
+  }catch(e){ toast("保存できませんでした（"+(e.code||"エラー")+"）"); }
+}
+$("btnDelExam").onclick=()=>{ $("delConfirm").hidden=false; };
+$("btnDelNo").onclick=()=>{ $("delConfirm").hidden=true; };
+$("btnDelYes").onclick=async()=>{
+  $("delConfirm").hidden=true;
+  const id=S.exam.id;
+  if (S.db&&S.uid&&S.exams.find(e=>e.id===id)){
+    try{
+      const ref=S.db.collection("data/users/"+S.uid).doc(id);
+      const rs=await ref.collection("results").get();
+      for (const d of rs.docs) await ref.collection("results").doc(d.id).delete();
+      await ref.delete();
+    }catch(e){ toast("削除できませんでした"); return; }
+  }
+  S.exams=S.exams.filter(e=>e.id!==id);
+  S.exam=S.exams[0]?structuredClone(S.exams[0]):SAMPLE_EXAM(); S.students=[];
+  renderSetup(); if(!S.exam.sample) loadResults(); toast("削除しました");
+};
+
+wireDrop("dropQ","fileQ",fs=>{ S.filesQ=fs; $("nameQ").textContent=fs.map(f=>f.name).join("、")||"クリックまたはドロップ"; });
+wireDrop("dropA","fileA",fs=>{ S.filesA=fs; $("nameA").textContent=fs.map(f=>f.name).join("、")||"クリックまたはドロップ"; });
+
+$("btnExtractStop").onclick=()=>S.extractCtl?.abort();
+$("btnExtract").onclick=async()=>{
+  const msg=$("extractMsg");
+  if (!S.sample){ msg.textContent="AIが使えないため自動作成できません。"; return; }
+  if (!S.limits?.images){ msg.textContent="この画面では画像をAIに送れません。"; return; }
+  if (!S.filesQ.length && !S.filesA.length){ msg.textContent="問題か模範解答のファイルを入れてください。"; return; }
+  readExamForm();
+  $("btnExtract").disabled=true; $("btnExtractStop").hidden=false; msg.textContent="PDFを読み込んでいます…";
+  try{
+    const qp=[], ap=[];
+    for (const f of S.filesQ) qp.push(...await fileToPages(f,1500));
+    for (const f of S.filesA) ap.push(...await fileToPages(f,1500));
+    const max=S.limits.images.maxCount;
+    S.extractCtl=new AbortController(); const sig=S.extractCtl.signal;
+    // 1) 全ページを区画に分け、上限枚数ずつ文字起こしする
+    const items=[];
+    for (const [kind,pages] of [["問題",qp],["模範解答",ap]])
+      for (let p=0;p<pages.length;p++)
+        for (const r of regionsFor(pages[p], false))
+          items.push({label:`${kind} PDFの${p+1}枚目${r.where==="全体"?"":"・"+r.where}`, page:pages[p], r});
+    const groups=chunk(items, max);
+    let doneN=0;
+    msg.textContent=`ページを読み取っています… 0 / ${groups.length}（全${qp.length+ap.length}ページ）`;
+    const texts=await runPool(groups.map(g=>async()=>{
+      const blobs=[]; for (const it of g) blobs.push(await cropRegion(it.page,it.r.x0,it.r.y0,it.r.x1,it.r.y1));
+      const tp=`添付画像は高校化学の試験冊子（問題または模範解答）のページです。各画像の内容を、採点基準づくりに使えるよう正確に文字に起こしてください。
+
+# 添付画像
+${g.map((it,i)=>`画像${i+1}: ${it.label}`).join("\n")}
+
+# 書き起こしのルール
+- 大問・小問の番号、配点表示（[3] など）、問題文、選択肢、与えられた数値・原子量、模範解答、採点の注記をすべて省略せずに書く。
+- 化学式・数式は CH4、6.0×10^23、H2O(l) のように文字で書く。
+- 図・グラフ・表・構造式は【図：…】【表：…】として、採点に必要な内容（軸、値、構造など）が分かるように説明する。
+- 表紙・注意事項・白紙だけのページは text を "" にする。
+- 推測で補わない。読めない箇所は［判読不能］とする。
+
+# 出力
+JSONだけを返す: {"pages":[{"image":1,"text":"…"}]}`;
+      const out=await S.sample.json(tp,{images:blobs, modelTier:"default", signal:sig, cache:false});
+      doneN++; msg.textContent=`ページを読み取っています… ${doneN} / ${groups.length}（全${qp.length+ap.length}ページ）`;
+      const arr=Array.isArray(out?.pages)?out.pages:[];
+      return g.map((it,i)=>{ const t=arr.find(x=>+x.image===i+1); return `--- ${it.label} ---\n${t?String(t.text??""):"［読み取れませんでした］"}`; });
+    }), 2, sig);
+    const qText=texts.flat().filter(t=>t.startsWith("--- 問題")).join("\n\n");
+    const aText=texts.flat().filter(t=>t.startsWith("--- 模範解答")).join("\n\n");
+    // 2) 書き起こしをまとめて採点基準にする（テキストのみ）
+    const prompt=`あなたは日本の高校理科（化学）の試験作成と採点に精通した教員です。下は小冊子形式の試験の「問題」と「模範解答」を1ページずつ書き起こしたものです。これをもとに、採点に使える設問リストと採点基準（マークスキーム）を作ってください。
+
+注意：冊子の印刷用PDF（面付け）の場合、ページの並びが問題の順番と一致しないことがあります。並び順ではなく大問・小問の番号で整理してください。表紙や注意事項は無視してください。
+
+# 問題の書き起こし
+${qText||"（なし）"}
+
+# 模範解答の書き起こし
+${aText||"（なし）"}
+
+# 教員の採点方針
+${$("policy").value}
+
+# 作り方
+- 採点の単位（小問）ごとに1項目にする。設問番号は試験の表記に合わせる（例 "1(1)", "2(3)イ"）。
+- type は choice（選択・語句の穴埋め）, numeric（数値のみ）, calc（計算過程つき）, written（記述・説明）, formula（化学式・反応式・構造式）のいずれか。
+- max は配点。問題に [3] などの配点表示があればそれを使う。なければ妥当な配点を決め、notes に「配点は推定」と書く。
+- points は採点項目（marking points）。各項目の点数の合計が max と一致するようにする。記述・計算は観点ごとに分け、部分点の基準が分かるように書く。
+- 有効数字・単位・係数・状態記号など、減点や許容の判断が必要な点は notes に書く。
+- prompt は問題文の要約（60字程度まで）、model は模範解答の要点。
+
+# 出力
+JSONだけを返す。形式:
+{"name":"試験名（読み取れれば）","questions":[{"no":"1(1)","type":"numeric","max":2,"prompt":"…","model":"…","points":[{"pts":2,"text":"…"}],"notes":"…"}]}`;
+    msg.textContent="読み取りが終わりました。AIが採点基準を作っています（1〜3分かかります）…";
+    const out=await S.sample.json(prompt,{modelTier:"complex", signal:sig, cache:false});
+    const qs=Array.isArray(out?.questions)?out.questions:[];
+    if (!qs.length) throw {code:"local", message:"設問を読み取れませんでした。ファイルを確認してください。"};
+    S.exam.questions=qs.map((q,i)=>({id:uid8(), no:String(q.no??i+1), type:TYPES[q.type]?q.type:"written", max:+q.max||0,
+      prompt:String(q.prompt??""), model:String(q.model??""), points:(Array.isArray(q.points)?q.points:[]).map(p=>({pts:+p.pts||0,text:String(p.text??"")})), notes:String(q.notes??"")}));
+    if (S.exam.sample){ S.exam.sample=false; S.exam.id="ex-"+uid8(); S.exam.name=out.name||"新しい試験"; }
+    else if (out.name && /^(新しい試験|無題の試験)$/.test(S.exam.name)) S.exam.name=out.name;
+    renderSetup();
+    msg.textContent=`${qs.length}問の採点基準を作りました。内容を確認して「設定を保存」を押してください。`;
+  }catch(e){ msg.textContent = e.code==="local" ? e.message : (e instanceof Error ? e.message : sampleErr(e)); }
+  finally{ $("btnExtract").disabled=false; $("btnExtractStop").hidden=true; S.extractCtl=null; }
+};
+
+/* ---------- 2. 答案の採点 ---------- */
+$("splitMode").onchange=()=>{ $("ppsWrap").hidden=$("splitMode").value!=="combined"; };
+wireDrop("dropS","fileS", addAnswerFiles);
+async function addAnswerFiles(files){
+  const prog=$("progTxt"); prog.textContent="答案を読み込んでいます…";
+  try{
+    if ($("splitMode").value==="combined"){
+      const pps=Math.max(1, +$("pps").value||1);
+      for (const f of files){
+        const pages=await fileToPages(f);
+        for (let i=0;i<pages.length;i+=pps){
+          const n=Math.floor(i/pps)+1; const key=`${f.name}#${n}`;
+          attachOrAdd(key, `${n}番目の答案`, pages.slice(i,i+pps), pps);
+        }
+      }
+    } else {
+      for (const f of files) attachOrAdd(f.name, f.name.replace(/\.[^.]+$/,""), await fileToPages(f));
+    }
+    prog.textContent="";
+  }catch(e){ prog.textContent="読み込めないファイルがありました："+(e.message||e); }
+  renderGrade();
+}
+function attachOrAdd(fileKey, name, pages, pps){
+  const ex=S.students.find(s=>s.fileKey===fileKey);
+  if (ex){ ex.pages=pages; if(pps) ex.pps=pps; return; }
+  S.students.push({id:"st-"+uid8(), fileKey, name, pages, pps:pps||null, status:"ready", result:null, reviewed:false});
+}
+function renderGrade(){
+  $("gExamName").textContent=S.exam.name;
+  $("gExamInfo").textContent=`${S.exam.questions.length}問・${S.exam.questions.reduce((a,q)=>a+(+q.max||0),0)}点${S.exam.sample?"・サンプル":""}`;
+  const box=$("studentsBox");
+  if (!S.students.length){ box.innerHTML=`<div class="empty">答案はまだありません。上の枠に答案のPDFを入れてください。</div>`; updateProgress(); return; }
+  const lbl={ready:"未採点",grading:"採点中",done:"採点済み",error:"エラー"};
+  box.innerHTML=`<div class="students">${S.students.map(s=>`
+    <div class="st" data-id="${s.id}">
+      <input type="text" value="${esc(s.name)}" data-name aria-label="生徒名">
+      <span class="fn">${esc(s.fileKey)}・${s.pages?s.pages.length+"ページ":"画像なし"}</span>
+      <span class="state ${s.status}" title="${esc(s.error||"")}">${lbl[s.status]}${s.status==="done"&&s.result?`　<span class="mono">${totalOf(s)}/${maxTotal()}</span>`:""}</span>
+      <button class="btn sm ghost" data-del>外す</button>
+    </div>${s.status==="error"?`<div class="notice err" style="margin:0;border-radius:0">${esc(s.error)}</div>`:""}`).join("")}</div>`;
+  updateProgress();
+}
+$("studentsBox").addEventListener("change",e=>{
+  if(!e.target.matches("[data-name]")) return; const s=S.students.find(x=>x.id===e.target.closest(".st").dataset.id);
+  s.name=e.target.value.trim()||s.name; if(s.result) queueSave(s);
+});
+$("studentsBox").addEventListener("click",e=>{
+  if(!e.target.matches("[data-del]")) return; const id=e.target.closest(".st").dataset.id;
+  S.students=S.students.filter(s=>s.id!==id); renderGrade();
+});
+$("btnClearS").onclick=()=>{ S.students=S.students.filter(s=>s.status==="done"); renderGrade(); toast("未採点の答案を一覧から外しました"); };
+function updateProgress(){
+  const n=S.students.length, d=S.students.filter(s=>s.status==="done").length;
+  $("progBar").style.width = n? (d/n*100)+"%" : "0%";
+  if (!S.gradeCtl) $("progTxt").textContent = n? `採点済み ${d} / ${n} 人` : "";
+}
+function maxTotal(){ return S.exam.questions.reduce((a,q)=>a+(+q.max||0),0); }
+function totalOf(s){ return (s.result?.questions||[]).reduce((a,q)=>a+(+q.score||0),0); }
+
+$("btnStop").onclick=()=>S.gradeCtl?.abort();
+$("btnGrade").onclick=async()=>{
+  if (!S.sample){ toast("AIが使えないため採点できません"); return; }
+  if (!S.limits?.images){ toast("この画面では画像をAIに送れません"); return; }
+  if (!S.exam.questions.length){ toast("先に設問と採点基準を設定してください"); setTab("setup"); return; }
+  const todo=S.students.filter(s=>s.pages&&(s.status==="ready"||s.status==="error"));
+  if (!todo.length){ toast("採点する答案がありません"); return; }
+  if (S.exam.sample) toast("サンプルの試験で採点します。実際の試験は設定を保存してから採点してください");
+  readExamForm();
+  S.gradeCtl=new AbortController(); const sig=S.gradeCtl.signal;
+  $("btnGrade").disabled=true; $("btnStop").hidden=false;
+  let done=0;
+  $("progTxt").textContent=`採点中… 0 / ${todo.length} 人（1人あたり1〜数分）`;
+  const queue=[...todo];
+  async function worker(){
+    while(queue.length && !sig.aborted){
+      const s=queue.shift(); s.status="grading"; s.error=""; renderGrade();
+      try{ await gradeStudent(s, sig); s.status="done"; queueSave(s,0); }
+      catch(e){ s.status= e?.code==="cancelled"?"ready":"error"; s.error = e?.code==="local"?e.message:sampleErr(e);
+        if (["not_granted","sampling_disabled","rate_limited","images_unavailable","session_expired"].includes(e?.code)) S.gradeCtl.abort(); }
+      done++; $("progTxt").textContent=`採点中… ${done} / ${todo.length} 人`; renderGrade();
+    }
+  }
+  await Promise.all([worker(),worker()]);
+  S.gradeCtl=null; $("btnGrade").disabled=false; $("btnStop").hidden=true; updateProgress();
+  const err=S.students.filter(s=>s.status==="error").length;
+  toast(err?`採点が終わりました（${err}人はエラー）`:"採点が終わりました。「確認と出力」で確認してください");
+};
+
+async function gradeStudent(s, signal){
+  const max=S.limits.images.maxCount;
+  const hi=$("tile").value==="1";
+  // 答案の各ページを区画に分け、上限枚数ずつのまとまりにする
+  const tiles=[];
+  for (let p=0;p<s.pages.length;p++) for (const r of regionsFor(s.pages[p],hi)) tiles.push({page:p, ...r});
+  const groups=chunk(tiles,max);
+  const rubric=S.exam.questions.map(q=>({qid:q.id, no:q.no, type:TYPES[q.type], max:q.max, prompt:q.prompt, model:q.model, points:q.points, notes:q.notes||undefined}));
+  const readName=$("readName").checked;
+  const found=new Map(); let name="";
+  const partSummaries=[];
+  const rank=r=>(r.reading?2:0)+({high:2,medium:1,low:0}[r.confidence]??0);
+  await runPool(groups.map((g,gi)=>async()=>{
+    const blobs=[]; for (const t of g) blobs.push(await cropRegion(s.pages[t.page],t.x0,t.y0,t.x1,t.y1));
+    const desc=g.map((t,i)=>`画像${i+1}: 答案 ${t.page+1}ページ目${t.where==="全体"?"（ページ全体）":"の"+t.where}`).join("\n");
+    const prompt=`あなたは日本の高校化学の採点担当教員です。添付画像は1人の生徒の手書き答案の一部です（答案は全${s.pages.length}ページ、これは${groups.length}回に分けたうちの${gi+1}回目）。下の採点基準と採点方針に従って、この画像に解答が写っている設問だけを採点してください。
+
+# 添付画像
+${desc}
+（隣り合う区画は少し重なっています。同じ設問が2枚に写っていても1件だけ返してください）
+
+# 採点方針（教員指定・最優先）
+${$("policy").value}
+
+# 設問と採点基準（JSON）
+${JSON.stringify(rubric)}
+
+# 採点のしかた
+1. 設問ごとに答案上の解答欄を探し、生徒が実際に書いた内容をそのまま reading に書き写す。推測で補わない。読めない文字は［判読不能］とし、解答欄はあるが空欄なら reading を "" にする。数式・化学式は CH4、6.0×10^23 のように文字で表す。
+2. 採点項目（points）を1つずつ照合し、満たした項目の番号（0始まり）を matched に入れ、その合計を score にする（0〜max）。
+3. 数値は値・有効数字・単位を、計算は途中式の考え方を、化学式・反応式は化学式・係数・下付き数字・電荷を確認する。notes の許容範囲を適用する。
+4. 採点方針により本来は誤りだが甘めに得点を与えた場合は lenient を true にし、lenientNote に何が本来の誤りで、本番では不正解になることを短く書く。
+5. reason：満点なら「正解。」に続けて良かった点を短く。満点でなければ、何が足りないか・どこが誤りかを1〜2文で。
+5b. point：満点でないとき（または甘めに得点を与えたとき）、正解するには何を書けばよいか、どう覚えるとよいかを生徒向けに1〜2文で。満点なら ""。
+6. 文字が読みにくい、解答欄が一部しか写っていない、採点基準に当てはめにくい場合は confidence を "low"、少し迷う場合は "medium" にする。
+7. image にはその解答欄が写っている画像番号、x と y にはその画像の中での解答欄の中心位置（左上が0、右下が1）を入れる。さらに top と bottom に、その画像の中での解答欄（枠）の上端と下端の縦位置（0〜1）を入れる。縦の位置は採点結果を答案の横に表示するのに使うので、できるだけ正確に。
+8. verdict は満点 "correct"、部分点 "partial"、0点 "wrong"、空欄 "blank"。
+9. この画像に解答欄が写っていない設問は返さない。
+${readName?"10. 氏名欄が写っていて読めれば studentName に書く（なければ \"\"）。":""}
+最後に notes に、この部分の答案から見える強み・弱みを1〜2文で書く。
+
+# 出力
+JSONだけを返す。qid は採点基準のものをそのまま使う。
+{"studentName":"","questions":[{"qid":"…","reading":"…","matched":[0],"score":2,"verdict":"partial","reason":"…","point":"…","lenient":false,"lenientNote":"","confidence":"high","image":1,"x":0.5,"y":0.3,"top":0.25,"bottom":0.35}],"notes":"…"}`;
+    const out=await S.sample.json(prompt,{images:blobs, modelTier:$("tier").value, signal, cache:false});
+    if (readName && !name && out?.studentName && String(out.studentName).trim()) name=String(out.studentName).trim();
+    if (out?.notes) partSummaries.push(String(out.notes));
+    for (const r of (Array.isArray(out?.questions)?out.questions:[])){
+      const t=g[(+r.image||1)-1]||g[0];
+      const hasPos=Number.isFinite(+r.x)&&Number.isFinite(+r.y)&&r.image;
+      const cand={...r, page: hasPos?t.page:null,
+        x: hasPos?Math.min(1,Math.max(0,t.x0+(+r.x)*(t.x1-t.x0))):null,
+        y: hasPos?Math.min(1,Math.max(0,t.y0+(+r.y)*(t.y1-t.y0))):null,
+        top: hasPos&&Number.isFinite(+r.top)?Math.min(1,Math.max(0,t.y0+(+r.top)*(t.y1-t.y0))):null,
+        bottom: hasPos&&Number.isFinite(+r.bottom)?Math.min(1,Math.max(0,t.y0+(+r.bottom)*(t.y1-t.y0))):null};
+      const prev=found.get(String(r.qid));
+      if (!prev || rank(cand)>rank(prev)) found.set(String(r.qid), cand);
+    }
+  }), 1, signal);
+
+  const qs=S.exam.questions.map(q=>{
+    const r=found.get(q.id);
+    if (!r) return {qid:q.id, reading:"", score:0, matched:[], verdict:"blank", reason:"答案の中にこの設問の解答欄を見つけられませんでした。", lenient:false, lenientNote:"", confidence:"low", page:null, x:null, y:null, edited:false};
+    const score=Math.max(0,Math.min(+q.max||0, +r.score||0));
+    return {qid:q.id, reading:String(r.reading??""), score, matched:Array.isArray(r.matched)?r.matched:[],
+      verdict:["correct","partial","wrong","blank"].includes(r.verdict)?r.verdict:(score>=q.max?"correct":score>0?"partial":"wrong"),
+      reason:String(r.reason??""), point:String(r.point??""), lenient:!!r.lenient, lenientNote:String(r.lenientNote??""),
+      confidence:["high","medium","low"].includes(r.confidence)?r.confidence:"medium",
+      page:r.page, x:r.x, y:r.y, top:r.top, bottom:r.bottom, edited:false};
+  });
+  const result={questions:qs, summary:"", notes:partSummaries, gradedAt:new Date().toISOString(), tier:$("tier").value};
+  try{ result.report=await makeReport(result, signal); result.summary=result.report.next||""; }
+  catch(e){ if(e?.code==="cancelled") throw e; result.summary=partSummaries.join(" "); }
+  if (name) s.name=name;
+  s.result=result;
+  s.reviewed=false;
+}
+
+/* 大問ごとの集計と、講評（よくできたところ・優先して取り組むこと・次の一歩）の作成 */
+function bigNo(no){ const m=String(no).match(/^\s*(\d+)/); return m?m[1]:String(no).trim(); }
+function sectionsOf(s){
+  const m=new Map(s.result.questions.map(r=>[r.qid,r])); const out=[];
+  for (const q of S.exam.questions){
+    const k=bigNo(q.no); let sec=out.find(x=>x.no===k);
+    if(!sec){ sec={no:k, title:(s.result.report?.sections||[]).find(x=>String(x.no)===k)?.title||"", got:0, max:0, items:[]}; out.push(sec); }
+    const r=m.get(q.id)||{score:0,verdict:"blank",reading:"",reason:"",point:""};
+    sec.got+=+r.score||0; sec.max+=+q.max||0; sec.items.push({q,r});
+  }
+  return out;
+}
+async function makeReport(result, signal){
+  const fake={result}; const secs=sectionsOf(fake);
+  const lines=secs.map(sec=>`## 大問${sec.no}（${sec.got}/${sec.max}）\n`+sec.items.map(({q,r})=>`- ${q.no}［${TYPES[q.type]}］${r.score}/${q.max}　問題：${q.prompt}　生徒の解答：${r.reading||"（無解答）"}　判定理由：${r.reason}`).join("\n")).join("\n\n");
+  const prompt=`高校化学の試験を採点した結果です。生徒に返す講評を作ってください。生徒が読んで次に何をすればよいか分かるよう、具体的に、です・ます調ではなく常体で簡潔に書いてください。
+
+# 試験
+${S.exam.name}${S.exam.subject?"（"+S.exam.subject+"）":""}
+
+# 採点結果
+${lines}
+
+# 作るもの
+- sections：大問ごとの短い題名（例「硫酸の製造と関連する化学」）。問題の内容から20字以内で。
+- good：よくできたところを2〜3項目。各項目は「該当する設問番号：何ができているか」の形。
+- priorities：失点の大きい弱点を最大3つ、優先度の高い順に。title は「弱点の要約（該当設問番号 −失点合計点）」、why は「なぜ優先するか」を1〜2文、todo は「具体的にやること」を1〜2文。
+- next：次の一歩を1文（具体的な設問を挙げて）。
+
+# 出力
+JSONだけを返す:
+{"sections":[{"no":"1","title":"…"}],"good":["…"],"priorities":[{"title":"…","why":"…","todo":"…"}],"next":"…"}`;
+  const out=await S.sample.json(prompt,{modelTier:"default", signal, cache:false});
+  return {
+    sections:(Array.isArray(out?.sections)?out.sections:[]).map(x=>({no:String(x.no??""), title:String(x.title??"")})),
+    good:(Array.isArray(out?.good)?out.good:[]).map(String),
+    priorities:(Array.isArray(out?.priorities)?out.priorities:[]).slice(0,3).map(p=>({title:String(p.title??""), why:String(p.why??""), todo:String(p.todo??"")})),
+    next:String(out?.next??"")
+  };
+}
+
+/* ---------- 保存（採点結果） ---------- */
+function queueSave(s, delay=800){
+  if (!S.db||!S.uid||S.exam.sample||!S.exams.find(e=>e.id===S.exam.id)) return;
+  clearTimeout(S.saveTimers[s.id]);
+  S.saveTimers[s.id]=setTimeout(async()=>{
+    try{
+      await S.db.collection("data/users/"+S.uid).doc(S.exam.id).collection("results").doc(s.id).set(JSON.parse(JSON.stringify({
+        name:s.name, fileKey:s.fileKey, pps:s.pps||null, pageCount:s.pages?.length??s.pageCount??0, reviewed:!!s.reviewed, result:s.result
+      })));
+    }catch(e){ toast("採点結果を保存できませんでした（"+(e.code||"エラー")+"）"); }
+  }, delay);
+}
+async function loadResults(){
+  if (!S.db||!S.uid||S.exam.sample) return;
+  try{
+    const rs=await S.db.collection("data/users/"+S.uid).doc(S.exam.id).collection("results").get();
+    for (const d of rs.docs){
+      const v=d.data(); if (S.students.find(s=>s.id===d.id)) continue;
+      S.students.push({id:d.id, name:v.name, fileKey:v.fileKey, pages:null, pps:v.pps||null, pageCount:v.pageCount, status:v.result?"done":"ready", result:v.result||null, reviewed:!!v.reviewed});
+    }
+  }catch(e){}
+}
+
+/* ---------- 3. 確認と出力 ---------- */
+const VMARK={correct:"◯", partial:"△", wrong:"×", blank:"×"};
+function renderReview(){
+  const done=S.students.filter(s=>s.result);
+  const box=$("mxBox");
+  if (!done.length){ box.innerHTML=`<div class="empty">採点済みの答案はまだありません。「答案の採点」で採点するとここに一覧が出ます。</div>`; $("detailBox").innerHTML=""; $("detailCard").hidden=true; $("avgTxt").textContent=""; return; }
+  $("detailCard").hidden=false;
+  const qs=S.exam.questions;
+  const avg=done.reduce((a,s)=>a+totalOf(s),0)/done.length;
+  $("avgTxt").textContent=`平均 ${avg.toFixed(1)} / ${maxTotal()} 点（${done.length}人）`;
+  box.innerHTML=`<table class="mx"><thead><tr><th style="text-align:left">生徒</th>${qs.map(q=>`<th>${esc(q.no)}<br><span class="mono">${q.max}</span></th>`).join("")}<th>合計</th><th>確認</th></tr></thead><tbody>${
+    done.map(s=>{ const m=new Map(s.result.questions.map(r=>[r.qid,r]));
+      return `<tr data-id="${s.id}" class="${S.selStudent===s.id?"sel":""}"><td class="name">${esc(s.name)}</td>${qs.map(q=>{const r=m.get(q.id); return `<td class="mono ${r&&r.confidence==="low"&&!r.edited?"low":""}">${r?r.score:"–"}</td>`;}).join("")}<td class="mono tot">${totalOf(s)}</td><td>${s.reviewed?"✓":""}</td></tr>`;}).join("")
+  }</tbody></table>`;
+  if (!S.selStudent || !done.find(s=>s.id===S.selStudent)) S.selStudent=done[0].id;
+  box.querySelectorAll("tr[data-id]").forEach(tr=>tr.classList.toggle("sel",tr.dataset.id===S.selStudent));
+  renderDetail();
+}
+$("mxBox").addEventListener("click",e=>{ const tr=e.target.closest("tr[data-id]"); if(!tr) return; S.selStudent=tr.dataset.id; S.selQ=null; renderReview(); $("detailCard").scrollIntoView({behavior:"smooth",block:"start"}); });
+
+function renderDetail(){
+  const s=S.students.find(x=>x.id===S.selStudent); const box=$("detailBox"); if(!s){box.innerHTML="";return;}
+  const qs=S.exam.questions; const m=new Map(s.result.questions.map(r=>[r.qid,r]));
+  const pagesHtml = s.pages ? s.pages.map((p,i)=>`<div class="pagebox" data-page="${i}" role="img" aria-label="${esc(s.name)}の答案 ${i+1}ページ目"><canvas style="display:block;width:100%;aspect-ratio:${p.w>p.h?SLOT_W*2:SLOT_W}/${SLOT_H}"></canvas></div>`).join("")
+    : `<div class="notice">答案画像はページを開き直すと消えるため、赤入れPDFを作るには答案ファイルをもう一度読み込んでください（${esc(s.fileKey.replace(/#\d+$/,""))}）。
+        <div class="row" style="margin-top:8px"><button class="btn sm primary" id="btnReattach">答案ファイルを読み込む</button><span class="note" id="reattachMsg"></span></div>
+        <input type="file" id="fileRe" accept="application/pdf,image/*" hidden></div>`;
+  box.innerHTML=`
+    <div class="row" style="justify-content:space-between;align-items:baseline;margin-bottom:12px">
+      <div class="sumbox"><h2 style="margin:0">${esc(s.name)}</h2><span class="big">${totalOf(s)}<span style="font-size:1rem;color:var(--muted)"> / ${maxTotal()}</span></span></div>
+      <div class="row">
+        <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkReviewed" ${s.reviewed?"checked":""}> 確認済みにする</label>
+        <button class="btn primary" id="btnOnePdf" ${s.pages?"":"disabled"}>この生徒の赤入れPDF</button>
+      </div>
+    </div>
+    <div class="detail">
+      <div><p class="pagehint">答案には ◯（満点）・△（部分点）・×（0点）だけを書き込み、点数は最後の講評ページにまとめます。右の設問を選ぶと答案上の記号が黄色くなります。位置がずれていれば、正しい解答欄をクリックすると記号を移せます。</p><div class="pages">${pagesHtml}</div></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${qs.map(q=>{ const r=m.get(q.id)||{score:0,verdict:"blank",reading:"",reason:""}; return `
+        <div class="ans ${S.selQ===q.id?"sel":""}" data-q="${q.id}">
+          <div class="top"><span class="verdict">${VMARK[r.verdict]||""}</span><span class="qn">${esc(q.no)}</span><span class="typechip">${TYPES[q.type]}</span>
+            <span style="flex:1"></span>${r.confidence==="low"&&!r.edited?`<span class="flag">要確認</span>`:""}${r.edited?`<span class="note">修正済み</span>`:""}
+            <input class="score mono" type="number" min="0" max="${q.max}" step="0.5" value="${r.score}" aria-label="${esc(q.no)}の得点"><span class="note">/ ${q.max}</span></div>
+          <div class="reading">${r.reading?esc(r.reading):'<span class="note">（無解答）</span>'}</div>
+          <div class="reason">${esc(r.reason)}</div>
+          ${r.point?`<div class="reason" style="color:var(--act)">ポイント：${esc(r.point)}</div>`:""}
+          ${r.lenient?`<div class="len">加点：${esc(r.lenientNote||"本番では不正解になります")}</div>`:""}
+          <details><summary>模範解答と採点項目</summary><div class="note" style="margin-top:4px">模範解答：${esc(q.model)}<br>${(q.points||[]).map((p,i)=>`${(r.matched||[]).includes(i)?"◯":"・"} ${esc(p.text)}（${p.pts}）`).join("<br>")}</div></details>
+        </div>`;}).join("")}
+        <div class="card" style="padding:12px 14px;background:var(--paper)">
+          <div class="row" style="justify-content:space-between"><b>講評（赤入れPDFの最後に入ります）</b><button class="btn sm" id="btnReport">講評を作り直す</button></div>
+          ${s.result.report?`<div class="note" style="margin-top:6px"><b>よくできたところ</b><br>${(s.result.report.good||[]).map(g=>"・"+esc(g)).join("<br>")}<br><b>優先して取り組むこと</b><br>${(s.result.report.priorities||[]).map((p,i)=>`${i+1}．${esc(p.title)}`).join("<br>")}</div>`:`<p class="note" style="margin:6px 0 0">まだ講評がありません。「講評を作り直す」で作れます。</p>`}
+          <label class="f" style="margin-top:8px">次の一歩<textarea id="summaryTxt" rows="2">${esc(s.result.report?.next??s.result.summary)}</textarea></label>
+          <span class="note" id="reportMsg"></span>
+        </div>
+      </div>
+    </div>`;
+  if (s.pages) box.querySelectorAll(".pagebox").forEach(async pb=>{
+    const i=+pb.dataset.page; const {cv,geom}=await scanCanvas(s,i,S.selQ);
+    const view=pb.querySelector("canvas"); view.width=cv.width; view.height=cv.height; view.getContext("2d").drawImage(cv,0,0); pb._geom=geom;
+  });
+  $("chkReviewed").onchange=e=>{ s.reviewed=e.target.checked; queueSave(s,0); renderReviewTableOnly(); };
+  $("summaryTxt").oninput=e=>{ s.result.summary=e.target.value; if(s.result.report) s.result.report.next=e.target.value; queueSave(s); };
+  $("btnReport").onclick=async()=>{
+    if(!S.sample){ $("reportMsg").textContent="AIが使えないため作れません。"; return; }
+    $("btnReport").disabled=true; $("reportMsg").textContent="講評を作っています…";
+    try{ s.result.report=await makeReport(s.result); s.result.summary=s.result.report.next; queueSave(s,0); renderDetail(); }
+    catch(e){ $("reportMsg").textContent=sampleErr(e); $("btnReport").disabled=false; }
+  };
+  if ($("btnReattach")){
+    $("btnReattach").onclick=()=>$("fileRe").click();
+    $("fileRe").onchange=async()=>{
+      const f=$("fileRe").files[0]; if(!f) return; const m=$("reattachMsg"); m.textContent="読み込んでいます…";
+      try{
+        let pages=await fileToPages(f);
+        const n=+(s.fileKey.match(/#(\d+)$/)||[])[1];
+        if (n){ const pps=s.pps||Math.max(1,+$("pps").value||1); pages=pages.slice((n-1)*pps, n*pps); }
+        if (!pages.length) throw new Error("この生徒のページが見つかりませんでした。");
+        if (s.pageCount && pages.length!==s.pageCount) toast(`ページ数が採点時（${s.pageCount}ページ）と違います。別のファイルでないか確認してください`);
+        s.pages=pages; renderDetail();
+      }catch(e){ m.textContent="読み込めませんでした："+(e.message||e); }
+    };
+  }
+  $("btnOnePdf").onclick=async()=>{ try{ const blob=await studentPdf(s); await saveFile(`${S.exam.name}_${s.name}_採点.pdf`, blob); }catch(e){ $("exportMsg").textContent=e.message||String(e); } };
+  box.querySelectorAll(".ans").forEach(el=>{
+    el.addEventListener("click",ev=>{ if(ev.target.closest("input,details,summary")) return; S.selQ=el.dataset.q; renderDetail(); });
+    el.querySelector("input.score").addEventListener("change",ev=>{
+      const q=qs.find(x=>x.id===el.dataset.q); let r=m.get(q.id);
+      if(!r){ r={qid:q.id,reading:"",score:0,matched:[],verdict:"blank",reason:"",confidence:"high",page:null,x:null,y:null}; s.result.questions.push(r); }
+      r.score=Math.max(0,Math.min(+q.max, +ev.target.value||0)); r.edited=true;
+      r.verdict = r.score>=q.max?"correct":r.score>0?"partial":(r.reading?"wrong":"blank");
+      queueSave(s); renderDetail(); renderReviewTableOnly();
+    });
+  });
+  box.querySelectorAll(".pagebox").forEach(pb=>pb.addEventListener("click",ev=>{
+    if(!S.selQ){ toast("先に右側の設問を選んでください"); return; }
+    const rect=pb.getBoundingClientRect(); const r=s.result.questions.find(x=>x.qid===S.selQ); if(!r) return;
+    const g=pb._geom; if(!g) return;
+    const fx=((ev.clientX-rect.left)/rect.width*g.W - g.ox)/g.pw, fy=((ev.clientY-rect.top)/rect.height*g.H - g.oy)/g.ph;
+    if(fx<0||fx>1||fy<0||fy>1) return;
+    r.page=+pb.dataset.page; r.x=fx; r.y=fy; r.top=null; r.bottom=null;
+    queueSave(s); renderDetail();
+  }));
+}
+function renderReviewTableOnly(){ const y=window.scrollY; const keep=S.selStudent; renderReview(); S.selStudent=keep; window.scrollTo(0,y); }
+/* 右余白の得点枠：答案ページ上の解答欄の高さ y に合わせ、重なる枠は下へずらす */
+const PDFC={full:"#2E7D32", part:"#E08A00", zero:"#C62828", navy:"#1F3A5F", blue:"#2B5C9E", ink:"#1E2A31", grey:"#5B6A71"};
+function verdictColor(r,q){ return r.score>=q.max ? PDFC.full : r.score>0 ? PDFC.part : PDFC.zero; }
+/* 得点枠の配置：解答欄（top〜bottom）の中央に置き、重なる枠は上下にずらし、ページの外へは出さない */
+function scoreBoxes(s, pageIdx, H, gap, minY, maxY){
+  const qs=S.exam.questions;
+  const list=s.result.questions.filter(r=>r.page===pageIdx&&r.y!=null).map(r=>({r,q:qs.find(x=>x.id===r.qid)})).filter(o=>o.q)
+    .map(o=>{ let t=o.r.top, b=o.r.bottom; if(t==null||b==null||b<=t){ t=b=o.r.y; } return {...o, top:t*H, bottom:b*H, anchor:(t+b)/2*H}; })
+    .sort((a,b)=>a.anchor-b.anchor);
+  const n=list.length; if(!n) return list;
+  if (n>1 && (n-1)*gap>maxY-minY) gap=(maxY-minY)/(n-1);
+  list.forEach((o,i)=>{ o.y=Math.min(maxY,Math.max(minY,o.anchor)); if(i>0&&o.y<list[i-1].y+gap) o.y=list[i-1].y+gap; });
+  for (let i=n-1;i>=0;i--){ const lim=i===n-1?maxY:list[i+1].y-gap; if(list[i].y>lim) list[i].y=lim; }
+  return list;
+}
+
+/* ---------- 出力 ---------- */
+async function saveFile(filename, data){
+  if (!S.downloads){ $("exportMsg").textContent="この画面ではファイルを保存できません。"; return; }
+  try{ await S.downloads.save({filename, data}); $("exportMsg").textContent=`「${filename}」を保存しました。`; }
+  catch(e){ if(e.code!=="declined") $("exportMsg").textContent="保存できませんでした（"+e.code+"）。"; }
+}
+$("btnCSV").onclick=()=>{
+  const done=S.students.filter(s=>s.result); if(!done.length){ toast("採点結果がありません"); return; }
+  const qs=S.exam.questions; const cell=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  const rows=[["生徒名",...qs.map(q=>`${q.no}（${q.max}）`),"合計","満点","要確認の設問","確認済み","総評"]];
+  for (const s of done){ const m=new Map(s.result.questions.map(r=>[r.qid,r]));
+    rows.push([s.name,...qs.map(q=>m.get(q.id)?.score??""),totalOf(s),maxTotal(),qs.filter(q=>m.get(q.id)?.confidence==="low"&&!m.get(q.id)?.edited).map(q=>q.no).join(" "),s.reviewed?"済":"",s.result.summary]); }
+  saveFile(`${S.exam.name}_採点一覧.csv`, "﻿"+rows.map(r=>r.map(cell).join(",")).join("\r\n"));
+};
+$("btnZip").onclick=async()=>{
+  const ready=S.students.filter(s=>s.result&&s.pages);
+  const missing=S.students.filter(s=>s.result&&!s.pages).length;
+  if(!ready.length){ $("exportMsg").textContent="答案画像が読み込まれていないため作れません。「答案の採点」で答案ファイルを読み込み直してください。"; return; }
+  if(!window.JSZip||!window.jspdf){ $("exportMsg").textContent="PDF作成ライブラリを読み込めませんでした。"; return; }
+  $("exportMsg").textContent="PDFを作っています…";
+  const zip=new JSZip();
+  for (const [i,s] of ready.entries()){ $("exportMsg").textContent=`PDFを作っています… ${i+1}/${ready.length}`; zip.file(`${s.name}_採点.pdf`, await studentPdf(s)); }
+  const blob=await zip.generateAsync({type:"blob"});
+  await saveFile(`${S.exam.name}_赤入れ.zip`, blob);
+  if (missing) $("exportMsg").textContent+=` 答案画像のない${missing}人は含まれていません。`;
+};
+/* 赤入れPDF：A3横に2ページずつ。先頭に得点カード、右余白に得点枠、大問の始まりに大問得点、最後に講評ページ */
+const SLOT_W=1240, SLOT_H=1754; // A4縦1枚分（150dpi）
+function rrect(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+const pct=s=>maxTotal()?(totalOf(s)/maxTotal()*100).toFixed(1):"0.0";
+function coverSlot(s){
+  const cv=document.createElement("canvas"); cv.width=SLOT_W; cv.height=SLOT_H; const c=cv.getContext("2d");
+  c.fillStyle="#fff"; c.fillRect(0,0,SLOT_W,SLOT_H); c.textAlign="center";
+  c.fillStyle=PDFC.navy; c.font=`500 44px "Zen Kaku Gothic New", sans-serif`; c.fillText(`${s.name}　　採点結果`, SLOT_W/2, 360);
+  c.strokeStyle=PDFC.zero; c.lineWidth=5; rrect(c,170,430,900,380,30); c.stroke();
+  c.fillStyle=PDFC.zero; c.font=`700 150px "IBM Plex Mono", monospace`; c.fillText(`${totalOf(s)} / ${maxTotal()}`, SLOT_W/2, 650);
+  c.font=`400 36px "Zen Kaku Gothic New", sans-serif`; c.fillText(`${pct(s)} %　　　${S.exam.subject||S.exam.name}`, SLOT_W/2, 760);
+  return cv;
+}
+/* 答案ページ：解答欄の位置に朱で ◯（満点）・△（部分点）・×（0点）だけを書き込む。点数は別紙（講評ページ）へ */
+async function scanCanvas(s, i, selQ){
+  const p=s.pages[i]; const land=p.w>p.h;
+  const W=land?SLOT_W*2:SLOT_W, H=SLOT_H;
+  const cv=document.createElement("canvas"); cv.width=W; cv.height=H; const c=cv.getContext("2d");
+  c.fillStyle="#fff"; c.fillRect(0,0,W,H);
+  const k=Math.min(W/p.w, H/p.h), pw=p.w*k, ph=p.h*k, ox=(W-pw)/2, oy=(H-ph)/2;
+  c.drawImage(await createImageBitmap(p.blob), ox, oy, pw, ph);
+  const qs=S.exam.questions, RED="#D2321F", placed=[];
+  const marks=s.result.questions.filter(r=>r.page===i&&r.y!=null).map(r=>({r,q:qs.find(x=>x.id===r.qid)})).filter(o=>o.q)
+    .sort((a,b)=>a.r.y-b.r.y||(a.r.x??.5)-(b.r.x??.5));
+  for (const {r,q} of marks){
+    const hBox=(r.top!=null&&r.bottom!=null&&r.bottom>r.top)?(r.bottom-r.top)*ph:0;
+    const R=Math.max(30, Math.min(64, hBox?hBox*0.45:42)), m=R*1.25;
+    let cx=Math.min(ox+pw-m, Math.max(ox+m, ox+(r.x??0.5)*pw));
+    const cy=Math.min(oy+ph-m, Math.max(oy+m, oy+r.y*ph));
+    // 近すぎる記号は横にずらして重ならないようにする
+    for (let t=0;t<8;t++){
+      const hit=placed.find(o=>Math.hypot(o.x-cx,o.y-cy)<(o.R+R)*1.1); if(!hit) break;
+      cx=hit.x+(hit.R+R)*1.15; if (cx>ox+pw-m){ cx=hit.x-(hit.R+R)*1.15*(t+1); }
+    }
+    placed.push({x:cx,y:cy,R});
+    if (selQ===r.qid){ c.fillStyle="rgba(255,214,0,.35)"; c.beginPath(); c.arc(cx,cy,R*1.5,0,Math.PI*2); c.fill(); }
+    c.strokeStyle=RED; c.lineWidth=Math.max(5,R*0.13); c.lineCap="round"; c.lineJoin="round"; c.beginPath();
+    if (r.score>=q.max) c.arc(cx,cy,R,0,Math.PI*2);
+    else if (r.score>0){ c.moveTo(cx,cy-R); c.lineTo(cx+R*1.05,cy+R*0.8); c.lineTo(cx-R*1.05,cy+R*0.8); c.closePath(); }
+    else { const d=R*0.8; c.moveTo(cx-d,cy-d); c.lineTo(cx+d,cy+d); c.moveTo(cx+d,cy-d); c.lineTo(cx-d,cy+d); }
+    c.stroke();
+  }
+  return {cv, geom:{W, H, ox, oy, pw, ph}};
+}
+async function studentPdf(s){
+  if(!window.jspdf) throw new Error("PDF作成ライブラリを読み込めませんでした。");
+  await document.fonts.ready;
+  const {jsPDF}=window.jspdf; const PW=1190.55, PH=841.89;
+  const doc=new jsPDF({unit:"pt",format:"a3",orientation:"landscape"}); let first=true;
+  const put=(cv,x,w)=>doc.addImage(cv.toDataURL("image/jpeg",0.85),"JPEG",x,0,w,PH);
+  const newPage=()=>{ if(!first) doc.addPage("a3","landscape"); first=false; };
+  // 並べる順：得点カード → 答案ページ。1ページ目に採点箇所がなければ（表紙）得点カードに置き換える
+  const slots=[{cover:true}];
+  s.pages.forEach((p,i)=>{ if(i===0 && !s.result.questions.some(r=>r.page===0)) return; slots.push({i}); });
+  let pending=null; let pageNo=0;
+  for (const sl of slots){
+    const cv = sl.cover ? coverSlot(s) : (await scanCanvas(s, sl.i)).cv;
+    if (cv.width>SLOT_W){ if(pending){ newPage(); put(pending,0,PW/2); pending=null; pageNo++; } newPage(); put(cv,0,PW); pageNo++; continue; }
+    if (!pending){ pending=cv; continue; }
+    newPage(); put(pending,0,PW/2); put(cv,PW/2,PW/2); pending=null; pageNo++;
+  }
+  if (pending){ newPage(); put(pending,0,PW/2); pageNo++; }
+  for (const cv of reportPages(s, pageNo)){ newPage(); doc.addImage(cv.toDataURL("image/jpeg",0.9),"JPEG",0,0,PW,PH); }
+  return doc.output("blob");
+}
+/* 講評ページ（A3横・2段組）。1枚目：得点表・よくできたところ・次の一歩・記号の意味／優先して取り組むこと。2枚目以降：設問別コメント */
+function reportPages(s, startNo){
+  const W=2480, H=1754, M=70, GAP=90, TOP=150, BOT=H-90, CW=(W-2*M-GAP)/2;
+  const pages=[]; let c, y, col;
+  const F=(w,px)=>`${w} ${px}px "Zen Kaku Gothic New", sans-serif`;
+  const head=`${S.exam.name}　／　${s.name}　／　得点 ${totalOf(s)} / ${maxTotal()}（${pct(s)} %）`;
+  function newPage(){
+    const cv=document.createElement("canvas"); cv.width=W; cv.height=H; c=cv.getContext("2d");
+    c.fillStyle="#fff"; c.fillRect(0,0,W,H); pages.push(cv);
+    c.fillStyle=PDFC.grey; c.font=F(400,24); c.textAlign="left"; c.fillText(head, M, 60);
+    c.fillStyle=PDFC.ink; c.fillRect(M,78,W-2*M,2);
+    c.textAlign="right"; c.font=F(400,22); c.fillText(String(startNo+pages.length), W-M, H-40); c.textAlign="left";
+    y=TOP; col=0;
+  }
+  const X=()=>M+col*(CW+GAP);
+  function nextCol(){ if(col===0){ col=1; y=TOP; } else newPage(); }
+  function wrap(text,font,maxW){ c.font=font; const out=[]; let line="";
+    for (const ch of String(text)){ if(ch==="\n"){out.push(line);line="";continue;} if(line&&c.measureText(line+ch).width>maxW){out.push(line);line=ch;} else line+=ch; }
+    if(line||!out.length) out.push(line); return out; }
+  // runs: [{label?, text, color, font, lh, indent}] → 1つのまとまりとして置く（段をまたがない）
+  function block(runs, opt={}){
+    const ind=opt.indent||0;
+    const prep=runs.map(r=>{ const font=r.font||F(400,26); c.font=F(700,r.lsize||24); const lw=r.label?c.measureText(r.label+"　").width:0;
+      return {...r, font, lw, ls:wrap(r.text, font, CW-ind-(r.indent||0)-lw)}; });
+    const h=prep.reduce((a,r)=>a+r.ls.length*(r.lh||38),0)+(opt.pad||0)*2;
+    if (y+h>BOT && y>TOP) nextCol();
+    const y0=y; y+=opt.pad||0;
+    if (opt.fill){ c.fillStyle=opt.fill; c.fillRect(X(),y0,CW,h); }
+    for (const r of prep){
+      const lh=r.lh||38, x=X()+ind+(r.indent||0);
+      r.ls.forEach((l,i)=>{
+        if (i===0&&r.label){ c.font=F(700,r.lsize||24); c.fillStyle=r.lcolor||PDFC.grey; c.fillText(r.label, x, y+lh*0.75); }
+        c.font=r.font; c.fillStyle=r.color||PDFC.ink; c.fillText(l, x+r.lw, y+lh*0.75); y+=lh; });
+    }
+    y+=opt.pad||0;
+    if (opt.stripe){ c.fillStyle=opt.stripe; c.fillRect(X()+4,y0,7,y-y0); }
+    return h;
+  }
+  const gap=h=>{ y+=h; };
+  const secs=sectionsOf(s), rep=s.result.report||{good:[],priorities:[],next:s.result.summary||""};
+  newPage();
+  // ---- 1枚目・左段 ----
+  block([{text:`${s.name} 採点結果`, font:F(500,46), color:PDFC.navy, lh:62},{text:`得点 ${totalOf(s)} / ${maxTotal()}（${pct(s)} %）`, font:F(500,32), color:PDFC.zero, lh:48}]);
+  gap(24);
+  { // 得点表
+    const x=X(), w=CW, rh=56, c1=w*0.56, c2=w*0.16; let ty=y;
+    c.fillStyle="#E8EEF5"; c.fillRect(x,ty,w,rh); c.strokeStyle="#9AA8B6"; c.lineWidth=2;
+    c.font=F(500,24); c.fillStyle=PDFC.ink; c.fillText("設問",x+16,ty+37); c.fillText("得点",x+c1+16,ty+37); c.fillText("得点率",x+c1+c2+16,ty+37);
+    c.strokeRect(x,ty,w,rh); ty+=rh;
+    for (const sec of secs){
+      c.strokeRect(x,ty,w,rh); c.fillStyle=PDFC.ink; c.font=F(400,24);
+      let t=`設問${sec.no} ${sec.title}`; while(c.measureText(t).width>c1-30&&t.length>4) t=t.slice(0,-2)+"…";
+      c.fillText(t,x+16,ty+37); c.fillText(`${sec.got} / ${sec.max}`,x+c1+16,ty+37);
+      const bx=x+c1+c2+16, bw=w-c1-c2-40, r=sec.max?sec.got/sec.max:0;
+      c.fillStyle="#E3E6E8"; rrect(c,bx,ty+18,bw,20,10); c.fill();
+      c.fillStyle= r>=0.5?PDFC.full:PDFC.zero; if(r>0){ rrect(c,bx,ty+18,Math.max(20,bw*r),20,10); c.fill(); }
+      ty+=rh;
+    }
+    for (const xx of [x+c1,x+c1+c2]){ c.beginPath(); c.moveTo(xx,y); c.lineTo(xx,ty); c.stroke(); }
+    y=ty;
+  }
+  gap(40);
+  if (rep.good?.length){ block([{text:"よくできたところ", font:F(500,32), color:PDFC.navy, lh:50}]); gap(6);
+    for (const g of rep.good) block([{text:"・"+g, font:F(400,25), lh:38, indent:10}]); gap(30); }
+  if (rep.next){ block([{text:"次の一歩", font:F(500,32), color:PDFC.navy, lh:50}]); gap(6); block([{text:rep.next, font:F(400,25), lh:38, indent:24}]); gap(30); }
+  block([{text:"記号・色の意味", font:F(500,30), color:PDFC.navy, lh:46}]);
+  block([{text:"答案の記号：◯＝満点　△＝部分点　×＝0点。点数は設問別コメントに書いてあります。", font:F(400,24), lh:38}]);
+  { c.font=F(400,24); let x=X(); const yy=y+28; const parts=[["コメントの色：",PDFC.ink],["緑＝満点　",PDFC.full],["橙＝部分点　",PDFC.part],["赤＝0点",PDFC.zero]];
+    for (const [t,cl] of parts){ c.fillStyle=cl; c.fillText(t,x,yy); x+=c.measureText(t).width; } y+=38; }
+  // ---- 1枚目・右段 ----
+  if (rep.priorities?.length){
+    col=1; y=TOP;
+    block([{text:"優先して取り組むこと", font:F(500,36), color:PDFC.navy, lh:56}]); gap(10);
+    rep.priorities.forEach((p,i)=>{
+      block([{text:`${i+1}．${p.title}`, font:F(500,27), color:PDFC.zero, lh:42},
+             {label:"なぜ", text:p.why, font:F(400,24), lh:36, indent:30},
+             {label:"やること", text:p.todo, font:F(400,24), lh:36, indent:30}]); gap(26);
+    });
+  }
+  // ---- 設問別コメント ----
+  newPage();
+  block([{text:`${S.exam.subject||S.exam.name} 設問別コメント`, font:F(500,38), color:PDFC.navy, lh:60}]); gap(16);
+  const mk={correct:"○",partial:"△",wrong:"×",blank:"×"};
+  for (const sec of secs){
+    block([{text:`設問${sec.no}${sec.title?" "+sec.title:""}　${sec.got} / ${sec.max} 点`, font:F(500,28), color:"#fff", lh:44, indent:18}], {fill:PDFC.navy, pad:10}); gap(14);
+    for (const {q,r} of sec.items){
+      const colr=verdictColor(r,q), full=r.score>=q.max&&!r.lenient;
+      const runs=[{text:`${r.score>=q.max?"○":r.score>0?"△":"×"} ${q.no}　${r.score} / ${q.max} 点`, font:F(500,26), color:colr, lh:40}];
+      if (full) runs.push({label:"コメント", text:r.reason||"正解。", font:F(400,23), lh:35});
+      else {
+        runs.push({label:"あなたの解答", text:r.reading||"（無解答）", font:F(400,23), lh:35});
+        if (q.model) runs.push({label:"正答", text:q.model, font:F(400,23), lh:35});
+        const pt=[r.lenient?(r.lenientNote||"甘めに得点。本番では不正解になる。"):"", r.reason, r.point].filter(Boolean).join(" ");
+        if (pt) runs.push({label:"ポイント", text:pt, font:F(400,23), color:PDFC.blue, lcolor:PDFC.blue, lh:35});
+      }
+      block(runs,{indent:26, stripe:colr}); gap(18);
+    }
+    gap(10);
+  }
+  return pages;
+}
+
+/* ---------- 起動 ---------- */
+renderSetup(); renderGrade();
+(async()=>{
+  if (!window.claude?.use){ setAI(false,"AI採点：使えません"); setDB(false,"保存：使えません"); return; }
+  const [sample, db, user, downloads] = await Promise.all(["sample","db","user","downloads"].map(n=>claude.use(n).catch(()=>null)));
+  S.sample=sample; S.downloads=downloads;
+  if (sample){ S.limits=await sample.limits().catch(()=>null); setAI(!!S.limits?.images, S.limits?.images?"AI採点：使えます":"AI採点：画像を送れません"); }
+  else setAI(false,"AI採点：使えません");
+  const id = user ? await user.id().catch(()=>null) : null;
+  if (db && id){
+    S.db=db; S.uid=id; setDB(true,"保存：あなた専用に保存");
+    try{
+      const snap=await db.collection("data/users/"+id).get();
+      S.exams=snap.docs.map(d=>d.data()).filter(v=>v&&v.kind==="exam").sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt))).map(v=>{ const {kind,updatedAt,...e}=v; return e; });
+      if (S.exams.length){ S.exam=structuredClone(S.exams[0]); renderSetup(); await loadResults(); }
+      else renderExamSel();
+    }catch(e){ setDB(false,"保存：読み込みに失敗"); }
+  } else setDB(false,"保存：使えません（この画面だけ）");
+})();
+function setAI(on,t){ $("dotAI").className="dot "+(on?"on":"off"); $("txtAI").textContent=t; }
+function setDB(on,t){ $("dotDB").className="dot "+(on?"on":"off"); $("txtDB").textContent=t; }
+</script>
